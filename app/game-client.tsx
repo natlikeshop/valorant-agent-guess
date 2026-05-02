@@ -18,6 +18,10 @@ export interface Agent {
 export function GameClient({ agents }: { agents: Agent[] }) {
   const [targetAgent, setTargetAgent] = useState<Agent | null>(null);
   const [eliminatedIds, setEliminatedIds] = useState<Set<string>>(new Set());
+  const [activeRole, setActiveRole] = useState<string | null>(null);
+  const [lang, setLang] = useState<'th' | 'en'>('th');
+
+  const roles = Array.from(new Set(agents.map(a => a.role?.displayName).filter(Boolean))) as string[];
 
   // Randomize on initial load
   useEffect(() => {
@@ -51,12 +55,20 @@ export function GameClient({ agents }: { agents: Agent[] }) {
     <div className="flex flex-col w-full min-h-screen bg-[#0f141c] text-white font-sans selection:bg-[#ff4655]">
       {/* Top Section: Target Agent */}
       <div className="relative flex flex-col items-center pt-8 pb-6 w-full bg-gradient-to-b from-[#1a212b] to-[#0f141c]">
-        {/* Refresh button placed absolutely or just rely on refresh page? Let's add a subtle refresh button */}
+        {/* Language Toggle */}
+        <button 
+          onClick={() => setLang(lang === 'th' ? 'en' : 'th')}
+          className="absolute top-6 left-6 px-4 py-2 bg-[#1c232c] hover:bg-[#252e38] text-neutral-300 hover:text-white rounded text-sm font-bold transition-colors border border-neutral-700 z-50"
+        >
+          {lang === 'th' ? 'EN' : 'TH'}
+        </button>
+
+        {/* Randomize button */}
         <button 
           onClick={handleRandomize}
-          className="absolute top-6 right-6 px-4 py-2 bg-[#ff4655]/10 hover:bg-[#ff4655]/20 text-[#ff4655] rounded text-sm font-bold uppercase tracking-widest transition-colors"
+          className="absolute top-6 right-6 px-4 py-2 bg-[#ff4655]/10 hover:bg-[#ff4655]/20 text-[#ff4655] rounded text-sm font-bold uppercase tracking-widest transition-colors z-50"
         >
-          สุ่มใหม่ (Randomize)
+          {lang === 'th' ? 'สุ่มใหม่ (Randomize)' : 'Randomize'}
         </button>
 
         <div className="relative w-full max-w-[400px] h-[300px] md:h-[400px] flex items-end justify-center">
@@ -89,12 +101,41 @@ export function GameClient({ agents }: { agents: Agent[] }) {
 
       {/* Grid Section */}
       <div className="flex flex-col max-w-[1400px] mx-auto w-full px-4 md:px-8 py-6">
-        <div className="text-neutral-400 text-sm mb-4 font-medium tracking-wide">
-          กระดานตัวละครทั้งหมด — กดเพื่อตัดออก
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+          <div className="text-neutral-400 text-sm font-medium tracking-wide">
+            {lang === 'th' ? 'กระดานตัวละครทั้งหมด — กดเพื่อตัดออก' : 'All Agents Board — Click to eliminate'}
+          </div>
+          
+          {/* Role Filters */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveRole(null)}
+              className={`px-3 py-1 text-xs md:text-sm font-bold uppercase tracking-wider rounded border transition-colors ${
+                activeRole === null 
+                  ? 'bg-[#ff4655] border-[#ff4655] text-white' 
+                  : 'bg-[#1c232c] border-neutral-600 text-neutral-400 hover:text-white hover:border-neutral-400'
+              }`}
+            >
+              {lang === 'th' ? 'ทั้งหมด (All)' : 'All'}
+            </button>
+            {roles.map(role => (
+              <button
+                key={role}
+                onClick={() => setActiveRole(role)}
+                className={`px-3 py-1 text-xs md:text-sm font-bold uppercase tracking-wider rounded border transition-colors ${
+                  activeRole === role 
+                    ? 'bg-[#ff4655] border-[#ff4655] text-white' 
+                    : 'bg-[#1c232c] border-neutral-600 text-neutral-400 hover:text-white hover:border-neutral-400'
+                }`}
+              >
+                {role}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
-          {agents.map((agent) => {
+          {(activeRole ? agents.filter(a => a.role?.displayName === activeRole) : agents).map((agent) => {
             const isEliminated = eliminatedIds.has(agent.uuid);
             return (
               <button
